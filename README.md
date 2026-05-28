@@ -64,6 +64,13 @@ docker-compose up --build
 
 Open your web browser and go to: http://localhost:3000
 
+The default login credentials for admin would be:
+
+    Username: admin
+    Password: hashed_pw_here
+
+You can add, and edit credentials later in the website.
+
 ---
 ## Stopping the Container
 To stop the server, go back to the terminal where docker-compose up is running and press:
