@@ -42,7 +42,7 @@ cd Insight
 
 ### 2. Install Docker
 
-If you haven't already, download and install Docker Desktop from docker.com. After installation, start Docker Desktop. You should see the Docker icon in your system tray or menu bar – this means Docker is running.
+If you haven't already, download and install Docker Desktop from https://www.docker.com. After installation, start Docker Desktop. You should see the Docker icon in your system tray or menu bar – this means Docker is running.
 
 ### 3. Build and Run the Container
 
@@ -52,11 +52,11 @@ This project uses docker-compose to simplify building and running the server. In
 docker-compose up --build
 ```
 
-    The --build flag tells Docker to build the image (the blueprint for the container) before starting it.
+--The --build flag tells Docker to build the image (the blueprint for the container) before starting it.
 
-    The first time you run this, it will download base images and install dependencies – this may take a few minutes.
+--The first time you run this, it will download base images and install dependencies – this may take a few minutes.
 
-    Once ready, you'll see log output ending with something like Server running on http://0.0.0.0:3000 or Listening on port 80.
+--Once ready, you'll see log output ending with something like Server running on http://0.0.0.0:3000 or Listening on port 80.
 
     Note: The terminal will now show live logs. To keep the server running, leave this terminal window open. You can open a second terminal for other commands.
 
@@ -72,4 +72,3 @@ text
 Ctrl + C
 
 Wait a few seconds for Docker to shut down gracefully. The terminal will return to the command prompt.
----
