@@ -1,0 +1,17 @@
+OrderDate,Region,ProductCategory,ProductName,SalesAmount,Quantity,Discount,CustomerSegment
+2024-01-05,North,Electronics,Laptop,1200.00,2,0.05,Enterprise
+2024-01-12,South,Electronics,Tablet,450.00,1,0.00,Consumer
+2024-01-18,East,Furniture,Office Chair,275.50,3,0.10,SMB
+2024-01-25,West,Clothing,Jacket,89.99,5,0.15,Consumer
+2024-02-02,North,Electronics,Headphones,79.99,4,0.00,Student
+2024-02-10,South,Furniture,Desk,399.00,1,0.05,Enterprise
+2024-02-14,East,Clothing,Sneakers,120.00,2,0.10,Consumer
+2024-02-20,West,Electronics,Laptop,1250.00,1,0.00,SMB
+2024-03-01,North,Furniture,Bookshelf,150.00,3,0.00,Consumer
+2024-03-07,South,Clothing,Jeans,65.50,4,0.20,Student
+2024-03-15,East,Electronics,Tablet,460.00,2,0.05,Enterprise
+2024-03-22,West,Furniture,Office Chair,280.00,2,0.10,SMB
+2024-04-03,North,Clothing,Jacket,95.00,2,0.00,Consumer
+2024-04-11,South,Electronics,Headphones,80.00,6,0.05,Student
+2024-04-19,East,Electronics,Laptop,1150.00,1,0.00,Enterprise
+2024-04-27,West,Clothing,Sneakers,125.00,3,0.10,Consumer
