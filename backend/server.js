@@ -296,22 +296,26 @@ app.post('/admin/rls', verifyToken, async (req, res) => {
 // --- NEW: Save a Custom Chart ---
 // --- CORRECTED: Save a Custom Chart ---
 app.post('/custom-charts', verifyToken, async (req, res) => {
-  const { dataset_id, chart_type, title, x_axis_column, y_axis_column, filter_column, filter_value } = req.body;
   try {
+    const { dataset_id, chart_type, title, x_axis_column, y_axis_column, filter_column, filter_value } = req.body;
+    const userId = req.user.user_id;
+
+    // 2. Double check that this uses "pool.query" too! 🌟
     await pool.query(
       `INSERT INTO custom_charts (dataset_id, user_id, chart_type, title, x_axis_column, y_axis_column, filter_column, filter_value) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [dataset_id, req.user.user_id, chart_type, title, x_axis_column, y_axis_column, filter_value ? filter_column : null, filter_value || null]
+      [dataset_id, userId, chart_type, title, x_axis_column, y_axis_column, filter_column, filter_value]
     );
-    res.status(201).json({ message: 'Chart pinned to dashboard!' });
+
+    res.status(201).json({ message: "Chart saved successfully!" });
   } catch (err) {
-    console.error("Save Chart Error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Database error saving chart:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 // --- NEW: Get Custom Charts for a Dataset ---
-app.get('/custom-charts/:datasetId', verifyToken, async (req, res) => {
+/*app.get('/custom-charts/:datasetId', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT * FROM custom_charts WHERE dataset_id = $1 AND user_id = $2', 
@@ -320,6 +324,23 @@ app.get('/custom-charts/:datasetId', verifyToken, async (req, res) => {
     res.json(result.rows);
   } catch(err) {
     res.status(500).json({ error: err.message });
+  }
+});*/
+// 2. ADD THIS NEW GET ROUTE DIRECTLY BELOW IT:
+app.get('/custom-charts', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.user_id; 
+    
+    // 1. Change "db.query" to "pool.query" 🌟
+    const result = await pool.query( 
+      'SELECT * FROM custom_charts WHERE user_id = $1', 
+      [userId]
+    );
+    
+    res.json(result.rows); 
+  } catch (err) {
+    console.error("Database error fetching charts:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

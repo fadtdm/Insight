@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Bar, Pie, Line, Doughnut } from 'react-chartjs-2';
+import { Bar, Pie, Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 
 function DashboardDesigner({ datasets, token }) {
@@ -89,6 +89,8 @@ function DashboardDesigner({ datasets, token }) {
   }, [rawData, xAxis, yAxis, filterCol, filterVal]);
 
   // 3. Save to Database
+  
+  
   const handleSaveChart = async () => {
     if (!title || !xAxis || !yAxis) return setMessage("Title, X-Axis, and Y-Axis are required.");
     try {
@@ -133,7 +135,6 @@ function DashboardDesigner({ datasets, token }) {
           {chartType === 'bar' && <Bar data={chartConfig} options={strictOptions} />}
           {chartType === 'line' && <Line data={chartConfig} options={strictOptions} />}
           {chartType === 'pie' && <Pie data={chartConfig} options={strictOptions} />}
-          {chartType === 'doughnut' && <Doughnut data={chartConfig} options={strictOptions} />}
         </div>
       </div>
     );
@@ -158,7 +159,6 @@ function DashboardDesigner({ datasets, token }) {
                 <option value="bar">Bar Chart</option>
                 <option value="line">Line Chart</option>
                 <option value="pie">Pie Chart</option>
-                <option value="doughnut">Doughnut Chart</option>
               </select>
               <select value={xAxis} onChange={(e) => setXAxis(e.target.value)} style={{ width: '100%', padding: '8px', marginBottom: '15px' }}><option value="">-- 3. X-Axis (Labels) --</option>{columns.map(c => <option key={c} value={c}>{c}</option>)}</select>
               <select value={yAxis} onChange={(e) => setYAxis(e.target.value)} style={{ width: '100%', padding: '8px', marginBottom: '15px' }}><option value="">-- 4. Y-Axis (Numbers) --</option>{columns.map(c => <option key={c} value={c}>{c}</option>)}</select>

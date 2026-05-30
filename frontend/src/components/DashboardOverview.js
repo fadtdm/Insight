@@ -24,7 +24,7 @@ function DashboardOverview({ datasets, token }) {
   }, [datasets]);
 
   // 2. Load preferences and layout configuration when the selection updates
-  useEffect(() => {
+  /*useEffect(() => {
     if (!selectedDataset) return;
     
     // Save to local storage so it remembers this dataset upon their next login
@@ -63,13 +63,118 @@ function DashboardOverview({ datasets, token }) {
       }
     };
     fetchDataset();
+  }, [selectedDataset, token]);*/
+  // 2. Load preferences and layout configuration when the selection updates
+  // 2. Load preferences and layout configuration when the selection updates
+  useEffect(() => {
+    if (!selectedDataset) return;
+    
+    // Save to local storage so it remembers this dataset upon their next login
+    localStorage.setItem('sme_last_dataset', selectedDataset);
+
+    const fetchDatasetAndDatabaseCharts = async () => {
+      try {
+        // A. Fetch the raw dataset contents (This part works!)
+        const res = await axios.get(`http://localhost:5000/dataset-content/${selectedDataset}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const data = res.data;
+        if (data && data.length > 0) {
+          setRawData(data);
+          const cols = Object.keys(data[0]);
+          setAvailableColumns(cols);
+
+          // Start by setting up your local storage/fallback layouts first
+          let finalCharts = [];
+          const savedConfig = localStorage.getItem(`sme_config_${selectedDataset}`);
+          if (savedConfig) {
+            const parsed = JSON.parse(savedConfig);
+            setKpiColumn(parsed.kpiColumn);
+            finalCharts = parsed.chartsConfig;
+          } else {
+            // Default Fallback configuration
+            const numericCol = cols.find(c => !isNaN(parseFloat(data[0][c]))) || cols[1];
+            setKpiColumn(numericCol);
+            finalCharts = [
+              { id: Date.now(), type: 'Bar', xAxis: cols[0], yAxis: numericCol },
+              { id: Date.now() + 1, type: 'Pie', xAxis: cols[0], yAxis: numericCol }
+            ];
+          }
+
+          // B. Try fetching custom charts from database DEFENSIVELY
+          try {
+            const chartsRes = await axios.get('http://localhost:5000/custom-charts', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (chartsRes.data && chartsRes.data.length > 0) {
+              const dbCharts = chartsRes.data
+                .filter(chart => chart.dataset_id.toString() === selectedDataset.toString())
+                .map(chart => ({
+                  id: chart.chart_id,
+                  type: chart.chart_type,
+                  xAxis: chart.x_axis_column,
+                  yAxis: chart.y_axis_column,
+                  title: chart.title
+                }));
+
+              if (dbCharts.length > 0) {
+                finalCharts = dbCharts; // Override layout with real database charts if they exist
+              }
+            }
+          } catch (chartErr) {
+            // If the backend returns a 404, we catch it here quietly. 
+            // Your dashboard will still load completely using your local storage configurations!
+            console.warn("Backend custom-charts GET route not found. Falling back to local storage layouts safely.");
+          }
+
+          // C. Commit the final configuration to state
+          setChartsConfig(finalCharts);
+        }
+      } catch (err) {
+        console.error("Failed to load core data details:", err);
+      }
+    };
+    
+    fetchDatasetAndDatabaseCharts();
   }, [selectedDataset, token]);
 
-  // 3. Save Custom Dashboard Changes
-  const saveConfiguration = () => {
+  // 3. Save Custom Dashboard Changes to both LocalStorage and PostgreSQL Database
+  const saveConfiguration = async () => {
+    // A. Backup layout locally first
     const config = { kpiColumn, chartsConfig };
     localStorage.setItem(`sme_config_${selectedDataset}`, JSON.stringify(config));
-    setIsEditing(false);
+    
+    // B. Guard against the "Bearer undefined" trap
+    if (!token || token === "undefined") {
+      console.error("Aborting POST: Token is empty or undefined.");
+      alert("Your session has timed out. Please log out and log back in.");
+      return;
+    }
+
+    try {
+      // C. Loop through your active charts and save them to PostgreSQL
+      for (const chart of chartsConfig) {
+        await axios.post('http://localhost:5000/custom-charts', {
+          dataset_id: parseInt(selectedDataset),
+          chart_type: chart.type,
+          title: chart.title || `${chart.yAxis} vs ${chart.xAxis} (${chart.type})`,
+          x_axis_column: chart.xAxis,
+          y_axis_column: chart.yAxis,
+          filter_column: null,
+          filter_value: null
+        }, {
+          headers: { Authorization: `Bearer ${token}` } // Clean, verified token string
+        });
+      }
+      
+      alert("📊 Dashboard layout successfully saved to PostgreSQL database!");
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Database save failed:", err);
+      alert(`Failed to save to database: ${err.response?.data?.error || err.message}`);
+    }
   };
 
   // 4. Data Transformer Helper
@@ -90,11 +195,15 @@ function DashboardOverview({ datasets, token }) {
   }, 0);
 
   // 6. Dynamic Chart Generation
+// 6. Dynamic Chart Generation with Flexbox Defenses
+  // 6. Dynamic Chart Generation (With Case-Insensitive Normalization)
   const renderChart = (chart) => {
     const { labels, values } = aggregateData(chart.xAxis, chart.yAxis);
     
-    // COLOR MANIPULATION: Enforce explicit unison blue theme for Bar charts 
-    const isBar = chart.type === 'Bar';
+    // 1. Normalize the chart type string to lowercase to prevent string-matching bugs 🌟
+    const chartType = String(chart.type || '').trim().toLowerCase();
+    const isBar = chartType === 'bar';
+    
     const bgColors = isBar 
       ? '#4e73df' 
       : ['#FF6384', '#36A2EB', '#FFCE56', '#1cc88a', '#f6c23e', '#e74a3b', '#858796', '#343a40'];
@@ -112,20 +221,35 @@ function DashboardOverview({ datasets, token }) {
 
     const options = { 
       responsive: true, 
+      maintainAspectRatio: false, // Allows chart to fill our wrapper height constraints
       plugins: { 
-        legend: { display: !isBar } // Hides the single-item legend box for bar graphs
+        legend: { display: !isBar } 
       } 
     };
 
     return (
       <div key={chart.id} style={{ background: '#fff', padding: '15px', borderRadius: '8px', border: '1px solid #e3e6f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#4e73df' }}>{chart.yAxis} vs {chart.xAxis} ({chart.type})</h4>
-        {chart.type === 'Bar' && <Bar data={dataPayload} options={options} />}
-        {chart.type === 'Pie' && <Pie data={dataPayload} options={options} />}
-        {chart.type === 'Line' && <Line data={dataPayload} options={options} />}
+        <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#4e73df' }}>
+          {chart.title || `${chart.yAxis} vs ${chart.xAxis}`}
+        </h4>
+        
+        {/* Absolute bounding wrapper to prevent Chart.js canvas height collapses */}
+        <div style={{ position: 'relative', height: '300px', width: '100%' }}>
+          {/* 2. Updated conditional switches to use normalized lowercase keys 🌟 */}
+          {chartType === 'bar' && <Bar data={dataPayload} options={options} />}
+          {chartType === 'pie' && <Pie data={dataPayload} options={options} />}
+          {chartType === 'line' && <Line data={dataPayload} options={options} />}
+          
+          {/* Fallback check in case the string is totally unexpected */}
+          {!['bar', 'pie', 'line'].includes(chartType) && (
+            <p style={{ textAlign: 'center', color: '#858796', paddingTop: '100px' }}>
+              Unknown chart type: "{chart.type}"
+            </p>
+          )}
+        </div>
         
         {isEditing && (
-          <button onClick={() => setChartsConfig(chartsConfig.filter(c => c.id !== chart.id))} style={{ marginTop: '10px', background: '#e74a3b', color: 'white', border: 'none', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={() => setChartsConfig(chartsConfig.filter(c => c.id !== chart.id))} style={{ marginTop: '15px', background: '#e74a3b', color: 'white', border: 'none', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}>
             Delete Chart
           </button>
         )}
