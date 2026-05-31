@@ -20,8 +20,13 @@ if (!fs.existsSync(uploadDir)){
     fs.mkdirSync(uploadDir);
 }
 // 1. CORS Configuration (Fixes the frontend connection)
-app.use(cors({
+/*app.use(cors({
   origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));*/
+app.use(cors({
+  origin: '*', // Allows external client browsers to safely communicate with your backend API
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -293,12 +298,32 @@ app.post('/admin/rls', verifyToken, async (req, res) => {
   }
 });
 
+
 // --- NEW: Save a Custom Chart ---
 // --- CORRECTED: Save a Custom Chart ---
 app.post('/custom-charts', verifyToken, async (req, res) => {
   try {
     const { dataset_id, chart_type, title, x_axis_column, y_axis_column, filter_column, filter_value } = req.body;
     const userId = req.user.user_id;
+
+    // 1. Guard against duplicates: Check if an identical chart already exists for this specific user and dataset 🛡️
+    const duplicateCheck = await pool.query(
+      `SELECT chart_id FROM custom_charts 
+       WHERE dataset_id = $1 
+         AND user_id = $2 
+         AND chart_type = $3 
+         AND title = $4 
+         AND x_axis_column = $5 
+         AND y_axis_column = $6
+         AND COALESCE(filter_column, '') = COALESCE($7, '') 
+         AND COALESCE(filter_value, '') = COALESCE($8, '')`,
+      [dataset_id, userId, chart_type, title, x_axis_column, y_axis_column, filter_column, filter_value]
+    );
+
+    if (duplicateCheck.rows.length > 0) {
+      // If it's already there, stop here and respond with a 200 OK success message without duplicating rows!
+      return res.status(200).json({ message: "Chart already exists and layout is synchronized!" });
+    }
 
     // 2. Double check that this uses "pool.query" too! 🌟
     await pool.query(
@@ -341,6 +366,25 @@ app.get('/custom-charts', verifyToken, async (req, res) => {
   } catch (err) {
     console.error("Database error fetching charts:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Add this right below your app.get('/custom-charts') route!
+app.delete('/custom-charts/:chart_id', verifyToken, async (req, res) => {
+  try {
+    const chartId = req.params.chart_id;
+    const userId = req.user.user_id;
+
+    // Delete the chart, but only if the logged-in user is the one who owns it
+    await pool.query(
+      'DELETE FROM custom_charts WHERE chart_id = $1 AND user_id = $2',
+      [chartId, userId]
+    );
+
+    res.json({ message: "Chart permanently deleted from database" });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ error: "Failed to delete chart" });
   }
 });
 

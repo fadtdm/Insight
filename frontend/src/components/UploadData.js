@@ -56,7 +56,7 @@ function UploadData({ token, fetchDashboardData }) {
     setStatusMessage('Uploading dataset...');
 
     try {
-      await axios.post('http://localhost:5000/upload', formData, {
+      await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

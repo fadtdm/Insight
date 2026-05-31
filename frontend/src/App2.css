@@ -1,0 +1,222 @@
+/* frontend/src/App.css */
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f3f4f6; /* Modern light gray background */
+  color: #1f2937;
+}
+
+/* --- Top Navigation Bar --- */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  height: 70px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2563eb; /* Primary Blue */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- Navigation Links with Hover Animation --- */
+.nav-menu {
+  display: flex;
+  gap: 15px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-link {
+  color: #4b5563;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+}
+
+/* The Hover Box Indicator */
+.nav-link:hover {
+  color: #2563eb;
+  background-color: #eff6ff; /* Light blue box */
+  transform: translateY(-2px); /* Slight lift animation */
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); /* Soft blue shadow */
+}
+
+/* --- Profile Dropdown --- */
+.profile-container {
+  position: relative;
+}
+
+.profile-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  font-weight: 600;
+  color: #374151;
+}
+
+.profile-button:hover {
+  background-color: #f3f4f6;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  min-width: 150px;
+  animation: slideDown 0.2s ease-out;
+}
+
+.dropdown-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: #ef4444; /* Red color for logout */
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #fef2f2;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Main Content Area --- */
+.main-content {
+  padding: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Add this to your existing frontend/src/App.css */
+
+/* --- Persistent Active Link Highlighting --- */
+.nav-link.active {
+  color: #2563eb !important;
+  background-color: #eff6ff; /* Persistent soft blue background block */
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+  border-bottom: 2px solid #2563eb;
+  border-radius: 8px 8px 4px 4px;
+}
+
+/* --- Google Drive-Style Drag & Drop Zone --- */
+.upload-container {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-width: 600px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.drop-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 50px 20px;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dynamic Class triggered when item hovers directly over the box */
+.drop-zone.dragging {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  transform: scale(1.01);
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #3b82f6;
+  margin-bottom: 16px;
+  transition: transform 0.2s ease;
+}
+
+.drop-zone.dragging .upload-icon {
+  transform: translateY(-5px);
+}
+
+.upload-button {
+  margin-top: 15px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.upload-button:hover {
+  background-color: #1d4ed8;
+}
+
+.upload-button:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #f1f5f9;
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin-top: 15px;
+  font-size: 14px;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}

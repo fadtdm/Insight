@@ -21,7 +21,7 @@ function PermissionManager({ users, datasets, token }) {
       setLoadingCols(true);
       try {
         // Fetch raw data rows from your existing content stream route to read headers
-        const res = await axios.get(`http://localhost:5000/dataset-content/${selectedDataset}`, {
+        const res = await axios.get(`https://pwn0nbjt-5000.asse.devtunnels.ms/dataset-content/${selectedDataset}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -65,7 +65,7 @@ function PermissionManager({ users, datasets, token }) {
     };
 
     try {
-      await axios.post('http://localhost:5000/admin/rls', payload, {
+      await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/admin/rls', payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert("Data permissions updated successfully! The user can now access this dataset.");
@@ -166,7 +166,7 @@ function AdminPanel({ token, role, datasets }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/admin/users', {
+      const res = await axios.get('https://pwn0nbjt-5000.asse.devtunnels.ms/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
@@ -205,7 +205,7 @@ function AdminPanel({ token, role, datasets }) {
     }
 
     try {
-      await axios.post('http://localhost:5000/admin/users', {
+      await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/admin/users', {
         username: newUsername,
         password: newPassword,
         role: newRole
@@ -230,7 +230,7 @@ function AdminPanel({ token, role, datasets }) {
     }
 
     try {
-      await axios.put(`http://localhost:5000/admin/users/${editingUser.user_id}`, {
+      await axios.put(`https://pwn0nbjt-5000.asse.devtunnels.ms/admin/users/${editingUser.user_id}`, {
         username: editingUser.username,
         role: editingUser.role,
         password: editingUser.password || "" // optional password update field

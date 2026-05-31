@@ -22,7 +22,7 @@ function DashboardDesigner({ datasets, token }) {
     if (!selectedDataset) return;
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/dataset-content/${selectedDataset}`, {
+        const res = await axios.get(`https://pwn0nbjt-5000.asse.devtunnels.ms/dataset-content/${selectedDataset}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setRawData(res.data);
@@ -90,11 +90,12 @@ function DashboardDesigner({ datasets, token }) {
 
   // 3. Save to Database
   
-  
-  const handleSaveChart = async () => {
+  // 1. Add a saving state at the top of DashboardDesigner component
+  const [isSaving, setIsSaving] = useState(false);
+  /*const handleSaveChart = async () => {
     if (!title || !xAxis || !yAxis) return setMessage("Title, X-Axis, and Y-Axis are required.");
     try {
-      await axios.post('http://localhost:5000/custom-charts', {
+      await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/custom-charts', {
         dataset_id: selectedDataset, chart_type: chartType, title: title,
         x_axis_column: xAxis, y_axis_column: yAxis,
         filter_column: filterCol, filter_value: filterVal
@@ -103,7 +104,33 @@ function DashboardDesigner({ datasets, token }) {
     } catch (err) {
       setMessage("Failed to save chart: " + (err.response?.data?.error || err.message));
     }
-  };
+  };*/
+  // 2. Update your handleSaveChart function
+const handleSaveChart = async () => {
+  if (!title || !xAxis || !yAxis) return setMessage("Title, X-Axis, and Y-Axis are required.");
+  if (isSaving) return; // Block execution if already processing 🛡️
+
+  setIsSaving(true); // Turn on the guard
+  setMessage("Saving...");
+
+  try {
+    await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/custom-charts', {
+      dataset_id: selectedDataset, 
+      chart_type: chartType, 
+      title: title,
+      x_axis_column: xAxis, 
+      y_axis_column: yAxis,
+      filter_column: filterCol, 
+      filter_value: filterVal
+    }, { headers: { Authorization: `Bearer ${token}` } });
+    
+    setMessage("Chart successfully saved! Check your main dashboard.");
+  } catch (err) {
+    setMessage("Failed to save chart: " + (err.response?.data?.error || err.message));
+  } finally {
+    setIsSaving(false); // Turn off the guard when finished
+  }
+};
 
   // 4. Render the Chart Preview
   const renderChart = () => {
@@ -167,7 +194,20 @@ function DashboardDesigner({ datasets, token }) {
                 <select value={filterCol} onChange={(e) => setFilterCol(e.target.value)} style={{ padding: '8px', flex: 1 }}><option value="">-- 5. Filter Column --</option>{columns.map(c => <option key={c} value={c}>{c}</option>)}</select>
                 <input type="text" placeholder="e.g. 100-500" value={filterVal} onChange={(e) => setFilterVal(e.target.value)} style={{ padding: '8px', flex: 1 }} disabled={!filterCol} />
               </div>
-              <button onClick={handleSaveChart} style={{ width: '100%', padding: '10px', background: '#4e73df', color: '#fff', border: 'none', cursor: 'pointer' }}>Save Chart</button>
+              <button 
+                onClick={handleSaveChart} 
+                disabled={isSaving}
+                style={{ 
+                  width: '100%', 
+                  padding: '10px', 
+                  background: isSaving ? '#9aa0a6' : '#4e73df', 
+                  color: '#fff', 
+                  border: 'none', 
+                cursor: isSaving ? 'not-allowed' : 'pointer' 
+          }}
+              >
+               {isSaving ? "Saving..." : "Save Chart"}
+              </button>
             </>
           )}
         </div>

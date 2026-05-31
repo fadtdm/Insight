@@ -32,7 +32,7 @@ function DashboardOverview({ datasets, token }) {
 
     const fetchDataset = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/dataset-content/${selectedDataset}`, {
+        const res = await axios.get(`https://pwn0nbjt-5000.asse.devtunnels.ms/dataset-content/${selectedDataset}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -75,7 +75,7 @@ function DashboardOverview({ datasets, token }) {
     const fetchDatasetAndDatabaseCharts = async () => {
       try {
         // A. Fetch the raw dataset contents (This part works!)
-        const res = await axios.get(`http://localhost:5000/dataset-content/${selectedDataset}`, {
+        const res = await axios.get(`https://pwn0nbjt-5000.asse.devtunnels.ms/dataset-content/${selectedDataset}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -104,7 +104,7 @@ function DashboardOverview({ datasets, token }) {
 
           // B. Try fetching custom charts from database DEFENSIVELY
           try {
-            const chartsRes = await axios.get('http://localhost:5000/custom-charts', {
+            const chartsRes = await axios.get('https://pwn0nbjt-5000.asse.devtunnels.ms/custom-charts', {
               headers: { Authorization: `Bearer ${token}` }
             });
             
@@ -116,7 +116,9 @@ function DashboardOverview({ datasets, token }) {
                   type: chart.chart_type,
                   xAxis: chart.x_axis_column,
                   yAxis: chart.y_axis_column,
-                  title: chart.title
+                  title: chart.title,
+                  filterCol: chart.filter_column,
+                  filterVal: chart.filter_value
                 }));
 
               if (dbCharts.length > 0) {
@@ -139,6 +141,25 @@ function DashboardOverview({ datasets, token }) {
     
     fetchDatasetAndDatabaseCharts();
   }, [selectedDataset, token]);
+  
+  // NEW: Smart Delete Handler
+  const handleDeleteChart = async (chartId) => {
+    // 1. Remove it from the React screen immediately
+    setChartsConfig(chartsConfig.filter(c => c.id !== chartId));
+
+    // 2. If it's a real database chart (IDs are usually small numbers like 1, 2, 5), tell the DB to delete it!
+    // (If the ID is a massive timestamp from Date.now(), it was never saved to the DB anyway)
+    if (chartId < 10000000000) {
+      try {
+        await axios.delete(`https://pwn0nbjt-5000.asse.devtunnels.ms/custom-charts/${chartId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log("Chart permanently deleted from database.");
+      } catch (err) {
+        console.error("Failed to delete chart from database:", err);
+      }
+    }
+  };
 
   // 3. Save Custom Dashboard Changes to both LocalStorage and PostgreSQL Database
   const saveConfiguration = async () => {
@@ -156,7 +177,8 @@ function DashboardOverview({ datasets, token }) {
     try {
       // C. Loop through your active charts and save them to PostgreSQL
       for (const chart of chartsConfig) {
-        await axios.post('http://localhost:5000/custom-charts', {
+        if (chart.id < 10000000000) continue;
+        await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/custom-charts', {
           dataset_id: parseInt(selectedDataset),
           chart_type: chart.type,
           title: chart.title || `${chart.yAxis} vs ${chart.xAxis} (${chart.type})`,
@@ -178,7 +200,7 @@ function DashboardOverview({ datasets, token }) {
   };
 
   // 4. Data Transformer Helper
-  const aggregateData = (xCol, yCol) => {
+  /*const aggregateData = (xCol, yCol) => {
     const aggregated = {};
     rawData.forEach(row => {
       const xVal = row[xCol] || 'Unknown';
@@ -187,6 +209,54 @@ function DashboardOverview({ datasets, token }) {
       aggregated[xVal] += yVal;
     });
     return { labels: Object.keys(aggregated), values: Object.values(aggregated) };
+  };*/
+  // 4. Data Transformer Helper (Now with Smart Filtering!)
+  const aggregateData = (xCol, yCol, filterCol, filterVal) => {
+    let activeData = rawData;
+
+    // Apply the smart filter if the chart has one saved
+    if (filterCol && filterVal) {
+      activeData = rawData.filter(row => {
+        const rawCell = row[filterCol];
+        if (rawCell === undefined || rawCell === null) return false;
+        
+        const cellStr = String(rawCell).trim();
+        const cellNum = parseFloat(cellStr.replace(/[^0-9.-]+/g, ""));
+        const query = filterVal.trim().toLowerCase();
+
+        // Range filter (e.g., 100-500)
+        if (query.includes('-') && !query.startsWith('-')) {
+           const parts = query.split('-');
+           const min = parseFloat(parts[0].trim());
+           const max = parseFloat(parts[1].trim());
+           if (!isNaN(min) && !isNaN(max) && !isNaN(cellNum)) {
+               return cellNum >= min && cellNum <= max;
+           }
+        }
+        // Comma list (e.g., Apple, Banana)
+        if (query.includes(',')) {
+           const allowed = query.split(',').map(q => q.trim());
+           return allowed.includes(cellStr.toLowerCase());
+        }
+        // Greater/Less than
+        if (query.startsWith('>')) return !isNaN(cellNum) && cellNum > parseFloat(query.substring(1));
+        if (query.startsWith('<')) return !isNaN(cellNum) && cellNum < parseFloat(query.substring(1));
+
+        // Exact match fallback
+        return cellStr.toLowerCase() === query;
+      });
+    }
+
+    // Now aggregate whatever data survived the filter
+    const aggregated = {};
+    activeData.forEach(row => {
+      const xVal = row[xCol] || 'Unknown';
+      const yVal = parseFloat(String(row[yCol]).replace(/[^0-9.-]+/g, "")) || 0;
+      if (!aggregated[xVal]) aggregated[xVal] = 0;
+      aggregated[xVal] += yVal;
+    });
+    
+    return { labels: Object.keys(aggregated), values: Object.values(aggregated) };
   };
 
   // 5. Calculate Custom KPI Overview Value
@@ -194,12 +264,11 @@ function DashboardOverview({ datasets, token }) {
     return sum + (parseFloat(String(row[kpiColumn]).replace(/[^0-9.-]+/g, "")) || 0);
   }, 0);
 
-  // 6. Dynamic Chart Generation
-// 6. Dynamic Chart Generation with Flexbox Defenses
+
   // 6. Dynamic Chart Generation (With Case-Insensitive Normalization)
   const renderChart = (chart) => {
-    const { labels, values } = aggregateData(chart.xAxis, chart.yAxis);
-    
+    //const { labels, values } = aggregateData(chart.xAxis, chart.yAxis);
+    const { labels, values } = aggregateData(chart.xAxis, chart.yAxis, chart.filterCol, chart.filterVal);
     // 1. Normalize the chart type string to lowercase to prevent string-matching bugs 🌟
     const chartType = String(chart.type || '').trim().toLowerCase();
     const isBar = chartType === 'bar';
@@ -248,10 +317,14 @@ function DashboardOverview({ datasets, token }) {
           )}
         </div>
         
+        {/* Update the button onClick here! */}
         {isEditing && (
-          <button onClick={() => setChartsConfig(chartsConfig.filter(c => c.id !== chart.id))} style={{ marginTop: '15px', background: '#e74a3b', color: 'white', border: 'none', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}>
-            Delete Chart
-          </button>
+          <button 
+            onClick={() => handleDeleteChart(chart.id)} 
+            style={{ marginTop: '15px', background: '#e74a3b', color: 'white', border: 'none', padding: '5px', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          Delete Chart
+        </button>
         )}
       </div>
     );

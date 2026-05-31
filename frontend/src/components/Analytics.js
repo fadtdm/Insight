@@ -30,7 +30,7 @@ function Analytics({ datasets = [], token }) {
 
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/dataset-content/${selectedDataset}`, {
+        const res = await axios.get(`https://pwn0nbjt-5000.asse.devtunnels.ms/dataset-content/${selectedDataset}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -86,7 +86,7 @@ function Analytics({ datasets = [], token }) {
     setAiInsights('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/ai-insights', {
+      const response = await axios.post('https://pwn0nbjt-5000.asse.devtunnels.ms/api/ai-insights', {
         datasetName: datasets.find(d => d.dataset_id.toString() === selectedDataset)?.file_name || 'Dataset',
         xAxis: selectedX,
         yAxis: selectedY,
